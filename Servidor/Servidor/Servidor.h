@@ -6,15 +6,36 @@
 #include <fcntl.h>
 #include <stdio.h>
 
-#define PIPE_NAME TEXT("\\\\.\\pipe\\PIPE_")
-#define PIPE_NAME2 TEXT("\\\\.\\pipe\\teste2")
-#define N_MAX_LEITORES 10
-#define TAM 256
+/// CONSTANTS
+#define PEDIDO_USERNAME 100
+#define PEDIDO_TERMINAR 50
 
-HANDLE PipeLeitores[N_MAX_LEITORES];
-int total;
-BOOL TERMINAR = FALSE;
 
-DWORD WINAPI RecebeLeitores(LPVOID param);
-DWORD WINAPI AtendeCliente(LPVOID param);
-DWORD nn;
+#define PIPE_INPUT TEXT("\\\\.\\pipe\\PIPE_IN")
+#define PIPE_OUTPUT TEXT("\\\\.\\pipe\\PIPE_OUT")
+#define N_MAX_JOGADORES 20
+#define BUFFER_TAM 256
+#define NOME_TAM 100 
+
+
+
+typedef struct {
+	TCHAR username[NOME_TAM];
+	int pontuacao;
+}JOGADOR;
+
+typedef struct {
+	TCHAR mensagem[BUFFER_TAM];
+	int idcomando;
+	JOGADOR jogador;
+}MENSG;
+
+
+// estrutura serpente
+// . head pos_x pos_y
+// . tail pos_x pos_y
+// . T	segmentos
+// . O	objetos
+// . S  segundos /sobre objeto
+// . A	numero de serpentes automaticas
+// . 
