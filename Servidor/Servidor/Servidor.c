@@ -19,11 +19,11 @@ OVERLAPPED overlapped_sincronizacao;
 HANDLE hEvento;
 
 /// *** PROTOTIPOS       *** ///
-
+/// THREADS ================ ///
 DWORD WINAPI RecebeJOGADOR(LPVOID param);
 DWORD WINAPI AtendeJOGADOR(LPVOID param);
-
-
+/// REGISTRY =============== ///
+BOOL GuardaDadosRegistry(const TCHAR *username_jogador, int pontuacao);
 /// **** **** **** **** **** ///
 
 
@@ -141,7 +141,7 @@ DWORD WINAPI RecebeJOGADOR(LPVOID param) {
 /// ========= ATENDE JOGADOR ====================================
 DWORD WINAPI AtendeJOGADOR(LPVOID param)
 {
-	TCHAR buf[BUFFER_TAM]; //256
+//	TCHAR buf[BUFFER_TAM]; //256
 	DWORD ntamBytes, n1;
 	//HANDLE pipe = (HANDLE)param;
 	int iJogador = (LPVOID)param;
@@ -181,10 +181,10 @@ DWORD WINAPI AtendeJOGADOR(LPVOID param)
 		if (!resultado) {
 			_tprintf(TEXT("[SERVIDOR] falha na rececao  : bytes:%d   error: %d\n"), ntamBytes, GetLastError());
 			if (GetLastError() == ERROR_BROKEN_PIPE) {
-				if (DisconnectNamedPipe(hPipe_jogador_leitura[iJogador])) _tprintf(TEXT("[%d] hPipe_leitura desconectado\n", iJogador));
-				if (DisconnectNamedPipe(hPipe_jogador_escrita[iJogador])) _tprintf(TEXT("[%d] hPipe_escrita desconectado\n", iJogador));
-				if (CloseHandle(hPipe_jogador_leitura[iJogador])) _tprintf(TEXT("[%d] hPipe_leitura encerrado\n", iJogador));
-				if (CloseHandle(hPipe_jogador_escrita[iJogador])) _tprintf(TEXT("[%d] hPipe_escrita encerrado\n", iJogador));
+				if (DisconnectNamedPipe(hPipe_jogador_leitura[iJogador])) _tprintf(TEXT("[%d] hPipe_leitura desconectado\n"), iJogador);
+				if (DisconnectNamedPipe(hPipe_jogador_escrita[iJogador])) _tprintf(TEXT("[%d] hPipe_escrita desconectado\n"), iJogador);
+				if (CloseHandle(hPipe_jogador_leitura[iJogador])) _tprintf(TEXT("[%d] hPipe_leitura encerrado\n"), iJogador);
+				if (CloseHandle(hPipe_jogador_escrita[iJogador])) _tprintf(TEXT("[%d] hPipe_escrita encerrado\n"), iJogador);
 			}
 			//TERMINAR = TRUE;
 			break;
@@ -195,6 +195,10 @@ DWORD WINAPI AtendeJOGADOR(LPVOID param)
 			_tprintf(TEXT("[SERVIDOR] Este é o ' %s ' username do jogador com lenght[%d]  \n"), msg_do_jogador.jogador.username, _tcslen(msg_do_jogador.jogador.username));
 			_stprintf_s(msg_server.mensagem, BUFFER_TAM, TEXT("[SERVIDOR] '%s' confirmado!"), msg_do_jogador.jogador.username);
 			_tcscpy_s(lista_jogadores_ligados[num_jogadores_registados++].username, NOME_TAM, msg_do_jogador.jogador.username);
+			
+
+			WriteFile(hPipe_jogador_escrita[iJogador], TEXT("[SERVIDOR] DEBUG ->> vou guardar no registry \n\n"), sizeof(TEXT("[SERVIDOR] DEBUG ->> vou guardar no registry \n\n"))*sizeof(TCHAR), &ntamBytes, NULL);
+			GuardaDadosRegistry(&msg_do_jogador.jogador.username, 65);
 
 		}
 		else {
@@ -237,27 +241,30 @@ DWORD WINAPI AtendeJOGADOR(LPVOID param)
 //=============== REGISTRY ===================================================//
 //============================================================================//
 
-int GuardaDadosRegistry() {
+BOOL GuardaDadosRegistry(const TCHAR *username_jogador, int pontuacao) {
 
 	HKEY chave;
 	DWORD queAconteceu;
 	int i = 0;
 
+	_tprintf(TEXT("debug->> %s \n\n"), username_jogador);
+
 	//Criar/abrir uma chave em HKEY_LOCAL_MACHINE\Software
-	if (RegCreateKeyEx(HKEY_CURRENT_USER, TEXT("[SERVIDOR] Software\\SNAKE_SO2"), 0, NULL, REG_OPTION_VOLATILE, KEY_ALL_ACCESS, NULL, &chave, &queAconteceu) != ERROR_SUCCESS) {
+	if (RegCreateKeyEx(HKEY_CURRENT_USER, TEXT("Software\\SNAKE_SO2"), 0, NULL, REG_OPTION_VOLATILE, KEY_ALL_ACCESS, NULL, &chave, &queAconteceu) != ERROR_SUCCESS) {
 		_tprintf(TEXT("Erro ao criar/abrir chave no Registry\n\n"));
+		return FALSE;
 	}
 	else {
 		if (queAconteceu == REG_CREATED_NEW_KEY)	//Se a chave foi criada, inicializar os valores
 		{
-			_tprintf(TEXT("[SERVIDOR] Chave: HKEY_CURRENT_USER\Software\SNAKE_SO2 criada no Registry\n\n"));
-			RegSetValueEx(chave, TEXT("JogadoresRegistados"), 0, REG_BINARY, (LPBYTE) lista_jogadores_ligados, sizeof(JOGADOR));
+			_tprintf(TEXT("[SERVIDOR] Chave: HKEY_CURRENT_USER\\Software\\SNAKE_SO2 criada no Registry - '%s'\n\n"), username_jogador);
+			RegSetValueEx(chave, username_jogador, 0, REG_SZ, (LPBYTE)&pontuacao, sizeof(pontuacao));
 			_tprintf(TEXT("[SERVIDOR] Jogadores Registados guardados no Registry\n"));
 		}
-		else if (queAconteceu == REG_OPENED_EXISTING_KEY)		//Se a chave foi aberta, substituir valores lá guardados
+		else if (queAconteceu == REG_OPENED_EXISTING_KEY)		//Se a chave foi aberta, substituir pontWuacao
 		{
-			_tprintf(TEXT("[SERVIDOR] Chave: HKEY_CURRENT_USER\Software\SNAKE_SO2 aberta no Registry\n\n"));
-			RegSetValueEx(chave, TEXT("JogadoresRegistados"), 0, REG_BINARY, (LPBYTE) lista_jogadores_ligados, sizeof(JOGADOR));
+			_tprintf(TEXT("[SERVIDOR] Chave: HKEY_CURRENT_USER\\Software\\SNAKE_SO2 aberta no Registry- '%s'\n\n"), username_jogador);
+			RegSetValueEx(chave, username_jogador, 0, REG_SZ, (LPBYTE)&pontuacao, sizeof(pontuacao));
 			//_tprintf(TEXT("[SERVIDOR] Jogadores Registados guardados no Registry\n\n"));
 		}
 	}
@@ -266,7 +273,7 @@ int GuardaDadosRegistry() {
 	return TRUE;
 }
 
-int Carrega_Lista_Jogadores_Registry() {
+BOOL Carrega_Lista_Jogadores_Registry() {
 
 	HKEY chave;
 	DWORD queAconteceu;
