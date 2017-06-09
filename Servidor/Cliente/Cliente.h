@@ -9,10 +9,10 @@
 #define MAX_COL 80
 
 typedef struct {
-	TCHAR cima;
-	TCHAR baixo;
-	TCHAR esq;
-	TCHAR dir;
+	TCHAR cima[1];
+	TCHAR baixo[1];
+	TCHAR esq[1];
+	TCHAR dir[1];
 } TECLAS;
 
 typedef struct {

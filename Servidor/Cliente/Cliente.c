@@ -42,7 +42,7 @@
 // "callback") 
 LRESULT CALLBACK TrataEventos(HWND, UINT, WPARAM, LPARAM);
 
-BOOL GetTecla(HWND hWnd, WPARAM wParam);
+BOOL CALLBACK GetTecla(HWND hWnd, UINT m, WPARAM wParam, LPARAM lParam);
 
 BOOL CALLBACK TrataEventoLogin(HWND hWnd, UINT m, WPARAM wParam, LPARAM lParam);
 BOOL CALLBACK TrataEventoServidorLocal(HWND hWnd, UINT m, WPARAM wParam, LPARAM lParam);
@@ -58,7 +58,7 @@ TCHAR *szProgName = TEXT("Snake");
 JOGADOR jogador;
 DADOS_JOGO jogo;
 
-BOOL dados_verificados = FALSE;
+BOOL bDados_verificados = FALSE;
 
 HINSTANCE hInstGlobal;
 
@@ -87,7 +87,7 @@ int WINAPI WinMain(HINSTANCE hInst, HINSTANCE hPrevInst, LPSTR lpCmdLine, int nC
 						// definir as características da classe da janela
 	HACCEL hAccel;		// Handler da resource accelerators (teclas de atalho)
 	
-	int resp = 0;
+	//int iResp = 0;
 	/*resp = AutenticarServidor();
 	if (resp == 1)
 	FlagServidor = 0;
@@ -212,9 +212,7 @@ int WINAPI WinMain(HINSTANCE hInst, HINSTANCE hPrevInst, LPSTR lpCmdLine, int nC
 	DispatchMessage(&lpMsg);
 	}
 	}*/
-	// ============================================================================
-	// 6. Fim do programa
-	// ============================================================================
+	// Fim do programa
 	return((int)lpMsg.wParam);		// Retorna-se sempre o parâmetro "wParam" da
 									// estrutura "lpMsg"
 }
@@ -260,8 +258,8 @@ LRESULT CALLBACK TrataEventos(HWND hWnd, UINT m, WPARAM wParam, LPARAM lParam) {
 }
 
 BOOL CALLBACK TrataEventoLogin(HWND hWnd, UINT m, WPARAM wParam, LPARAM lParam) {
-	BOOL sucess = TRUE, error = FALSE;
-	TCHAR erro[TAM] = TEXT("\0");
+	BOOL bSucess = TRUE, bError = FALSE;
+	TCHAR tErro[TAM] = TEXT("\0"), tTecla = "\0";
 
 	switch (m) {
 	case WM_INITDIALOG: 
@@ -271,116 +269,151 @@ BOOL CALLBACK TrataEventoLogin(HWND hWnd, UINT m, WPARAM wParam, LPARAM lParam) 
 		switch (LOWORD(wParam)) {
 
 		case IDOK: // Passa os dados verificados ao servidor
-			if (dados_verificados) {								// Pipe aqui!!!
+			if (bDados_verificados) {								// Pipe aqui!!!
 				MessageBox(hWnd, TEXT("Dados submetidos!"), TEXT("Sucesso"), MB_OK);
 				EndDialog(hWnd, 0);
 				break;
-			}
-			else
+			} else
 				MessageBox(hWnd, TEXT("Verificação necessária!"), TEXT("Aviso"), MB_OK);
 			return TRUE;
 
 		case ID_CHECK_DADOS: // Verifica se introduziu todos os dados necessários
-			wcscat_s(erro, TAM, TEXT("Erro no(s) campo(s): \0"));
+			wcscat_s(tErro, TAM, TEXT("Erro no(s) campo(s): \0"));
 
 			if (GetDlgItemText(hWnd, IDC_EDIT_NOME, jogador.username, TAM) == 0) {
-			wcscat_s(erro, TAM, TEXT(" \"Nome\"\0"));
-			error = TRUE;}
+				wcscat_s(tErro, TAM, TEXT(" \"Nome\"\0"));
+				bError = TRUE;
+			}
 
-			jogo.max_jogadores = GetDlgItemInt(hWnd, IDC_EDIT_MAXJOG, &sucess , FALSE);
-			if (!sucess) {
-				wcscat_s(erro, TAM, TEXT(" \"Max Jogador\"\0"));
-				error = TRUE;}
+			if (GetDlgItemText(hWnd, IDC_EDIT_CIMA, jogador.teclas.cima, TAM) == 0) {
+					wcscat_s(tErro, TAM, TEXT(" \"Tecla Cima\"\0"));
+					bError = TRUE;
+			} else 
+				if (_tcsclen_l(jogador.teclas.cima) != 1) {
+					wcscat_s(tErro, TAM, TEXT(" \"Tecla Cima\"\0"));
+					bError = TRUE;
+				}
 
-			jogo.linhas = GetDlgItemInt(hWnd, IDC_EDIT_LINHAS, &sucess, FALSE);
-			if (!sucess) {
-				wcscat_s(erro, TAM, TEXT(" \"Linhas\"\0"));
-				error = TRUE;
+			if (GetDlgItemText(hWnd, IDC_EDIT_BAIXO, jogador.teclas.baixo, TAM) == 0) {
+				wcscat_s(tErro, TAM, TEXT(" \"Tecla Baixo\"\0"));
+				bError = TRUE;
+			}
+			else
+				if (_tcsclen_l(jogador.teclas.baixo) != 1) {
+					wcscat_s(tErro, TAM, TEXT(" \"Tecla Baixo\"\0"));
+					bError = TRUE;
+				}
+
+			if (GetDlgItemText(hWnd, IDC_EDIT_ESQ, jogador.teclas.esq, TAM) == 0) {
+				wcscat_s(tErro, TAM, TEXT(" \"Tecla Esquerda\"\0"));
+				bError = TRUE;
+			}
+			else
+				if (_tcsclen_l(jogador.teclas.esq) != 1) {
+					wcscat_s(tErro, TAM, TEXT(" \"Tecla Esquerda\"\0"));
+					bError = TRUE;
+				}
+
+			if (GetDlgItemText(hWnd, IDC_EDIT_DIR, jogador.teclas.dir, TAM) == 0) {
+				wcscat_s(tErro, TAM, TEXT(" \"Tecla Direita\"\0"));
+				bError = TRUE;
+			}
+			else
+				if (_tcsclen_l(jogador.teclas.dir) != 1) {
+					wcscat_s(tErro, TAM, TEXT(" \"Tecla Direita\"\0"));
+					bError = TRUE;
+				}
+
+			jogo.max_jogadores = GetDlgItemInt(hWnd, IDC_EDIT_MAXJOG, &bSucess , FALSE);
+			if (!bSucess) {
+				wcscat_s(tErro, TAM, TEXT(" \"Max Jogador\"\0"));
+				bError = TRUE;}
+
+			jogo.linhas = GetDlgItemInt(hWnd, IDC_EDIT_LINHAS, &bSucess, FALSE);
+			if (!bSucess) {
+				wcscat_s(tErro, TAM, TEXT(" \"Linhas\"\0"));
+				bError = TRUE;
 			} else if (jogo.linhas < MIN_LIN || jogo.linhas > MAX_LIN) {
-				wcscat_s(erro, TAM, TEXT(" \"Linhas\"\0"));
-				error = TRUE;}
+				wcscat_s(tErro, TAM, TEXT(" \"Linhas\"\0"));
+				bError = TRUE;}
 
-			jogo.colunas = GetDlgItemInt(hWnd, IDC_EDIT_COLUNAS, &sucess, FALSE);
-			if (!sucess){
-				wcscat_s(erro, TAM, TEXT(" \"Colunas\"\0"));
-				error = TRUE;
+			jogo.colunas = GetDlgItemInt(hWnd, IDC_EDIT_COLUNAS, &bSucess, FALSE);
+			if (!bSucess){
+				wcscat_s(tErro, TAM, TEXT(" \"Colunas\"\0"));
+				bError = TRUE;
 			} else if (jogo.colunas < MIN_COL || jogo.colunas > MAX_COL) {
-					wcscat_s(erro, TAM, TEXT(" \"Colunas\"\0"));
-					error = TRUE;}
+					wcscat_s(tErro, TAM, TEXT(" \"Colunas\"\0"));
+					bError = TRUE;}
 
-			jogo.N = GetDlgItemInt(hWnd, IDC_EDIT_CADENCIA, &sucess, FALSE);
-			if (!sucess) {
-				wcscat_s(erro, TAM, TEXT(" \"Cadencia(N)\"\0"));
-				error = TRUE;
+			jogo.N = GetDlgItemInt(hWnd, IDC_EDIT_CADENCIA, &bSucess, FALSE);
+			if (!bSucess) {
+				wcscat_s(tErro, TAM, TEXT(" \"Cadencia(N)\"\0"));
+				bError = TRUE;
 			}
 
-			jogo.A = GetDlgItemInt(hWnd, IDC_EDIT_SERPENTES_AUTO, &sucess, FALSE);
-			if (!sucess) {
-				wcscat_s(erro, TAM, TEXT(" \"Automáticas\"\0"));
-				error = TRUE;
+			jogo.A = GetDlgItemInt(hWnd, IDC_EDIT_SERPENTES_AUTO, &bSucess, FALSE);
+			if (!bSucess) {
+				wcscat_s(tErro, TAM, TEXT(" \"Automáticas\"\0"));
+				bError = TRUE;
 			}
 
-			jogo.T = GetDlgItemInt(hWnd, IDC_EDIT_TAM_SERPENTE, &sucess, FALSE);
-			if (!sucess) {
-				wcscat_s(erro, TAM, TEXT(" \"Tam Inicial(T)\"\0"));
-				error = TRUE;
+			jogo.T = GetDlgItemInt(hWnd, IDC_EDIT_TAM_SERPENTE, &bSucess, FALSE);
+			if (!bSucess) {
+				wcscat_s(tErro, TAM, TEXT(" \"Tam Inicial(T)\"\0"));
+				bError = TRUE;
 			}
 
-			jogo.O = GetDlgItemInt(hWnd, IDC_EDIT_QTD_OBJ, &sucess, FALSE);
-			if (!sucess) {
-				wcscat_s(erro, TAM, TEXT(" \"Quantidade(O)\"\0"));
-				error = TRUE;
+			jogo.O = GetDlgItemInt(hWnd, IDC_EDIT_QTD_OBJ, &bSucess, FALSE);
+			if (!bSucess) {
+				wcscat_s(tErro, TAM, TEXT(" \"Quantidade(O)\"\0"));
+				bError = TRUE;
 			}
 
-			jogo.efeito = GetDlgItemInt(hWnd, IDC_EDIT_DURACAO_EFEITO, &sucess, FALSE);
-			if (!sucess) {
-				wcscat_s(erro, TAM, TEXT(" \"Duração Efeito\"\0"));
-				error = TRUE;
+			jogo.efeito = GetDlgItemInt(hWnd, IDC_EDIT_DURACAO_EFEITO, &bSucess, FALSE);
+			if (!bSucess) {
+				wcscat_s(tErro, TAM, TEXT(" \"Duração Efeito\"\0"));
+				bError = TRUE;
 			}
 
-			jogo.duracao = GetDlgItemInt(hWnd, IDC_EDIT_DURACAO_MAPA, &sucess, FALSE);
-			if (!sucess) {
-				wcscat_s(erro, TAM, TEXT(" \"Duração no Mapa\"\0"));
-				error = TRUE;
+			jogo.duracao = GetDlgItemInt(hWnd, IDC_EDIT_DURACAO_MAPA, &bSucess, FALSE);
+			if (!bSucess) {
+				wcscat_s(tErro, TAM, TEXT(" \"Duração no Mapa\"\0"));
+				bError = TRUE;
 			}
 
-			jogo.vulgar = GetDlgItemInt(hWnd, IDC_EDIT_FREQ_VULGAR, &sucess, FALSE);
-			if (!sucess) {
-				wcscat_s(erro, TAM, TEXT(" \"Vulgar\"\0"));
-				error = TRUE;
+			jogo.vulgar = GetDlgItemInt(hWnd, IDC_EDIT_FREQ_VULGAR, &bSucess, FALSE);
+			if (!bSucess) {
+				wcscat_s(tErro, TAM, TEXT(" \"Vulgar\"\0"));
+				bError = TRUE;
 			} else if (jogo.vulgar < 1 || jogo.vulgar > 100) {
-				wcscat_s(erro, TAM, TEXT(" \"Vulgar\"\0"));
-				error = TRUE;}
+				wcscat_s(tErro, TAM, TEXT(" \"Vulgar\"\0"));
+				bError = TRUE;}
 
-			jogo.invulgar = GetDlgItemInt(hWnd, IDC_EDIT_FREQ_INVULGAR, &sucess, FALSE);
-			if (!sucess) {
-				wcscat_s(erro, TAM, TEXT(" \"Invulgar\"\0"));
-				error = TRUE;
+			jogo.invulgar = GetDlgItemInt(hWnd, IDC_EDIT_FREQ_INVULGAR, &bSucess, FALSE);
+			if (!bSucess) {
+				wcscat_s(tErro, TAM, TEXT(" \"Invulgar\"\0"));
+				bError = TRUE;
 			} else if (jogo.invulgar < 1 || jogo.invulgar > 100) {
-				wcscat_s(erro, TAM, TEXT(" \"Invulgar\"\0"));
-				error = TRUE;}
+				wcscat_s(tErro, TAM, TEXT(" \"Invulgar\"\0"));
+				bError = TRUE;}
 
-			jogo.raro = GetDlgItemInt(hWnd, IDC_EDIT_FREQ_RARO, &sucess, FALSE);
-			if (!sucess) {
-				wcscat_s(erro, TAM, TEXT(" \"Raro\"\0"));
-				error = TRUE;
+			jogo.raro = GetDlgItemInt(hWnd, IDC_EDIT_FREQ_RARO, &bSucess, FALSE);
+			if (!bSucess) {
+				wcscat_s(tErro, TAM, TEXT(" \"Raro\"\0"));
+				bError = TRUE;
 			} else if (jogo.raro < 1 || jogo.raro > 100) {
-				wcscat_s(erro, TAM, TEXT(" \"Raro\"\0"));
-				error = TRUE;}
+				wcscat_s(tErro, TAM, TEXT(" \"Raro\"\0"));
+				bError = TRUE;}
 
-			wcscat_s(erro, TAM, TEXT("!\0"));
-			if (error)
-				MessageBox(hWnd, erro, TEXT("Erro"), MB_OK);
+			wcscat_s(tErro, TAM, TEXT("!\0"));
+			if (bError)
+				MessageBox(hWnd, tErro, TEXT("Erro"), MB_OK);
 			else {
-				dados_verificados = TRUE;
+				bDados_verificados = TRUE;
 				MessageBox(hWnd, TEXT("Dados corretos!"), TEXT("Sucesso"), MB_OK);
 			}
 			return TRUE; // ID_CHECK_DADOS
 
-			case IDC_BTN_BAIXO:
-				DialogBox(hInstGlobal, IDD_DIALOG_TECLAS, hWnd, GetTecla(hWnd, wParam));
-
-				break;
 
 			case IDCANCEL:
 				EndDialog(hWnd, 0);
@@ -395,16 +428,6 @@ BOOL CALLBACK TrataEventoLogin(HWND hWnd, UINT m, WPARAM wParam, LPARAM lParam) 
 	return 0;
 }
 
-BOOL GetTecla(HWND hWnd, WPARAM wParam) {
-	switch (wParam) {
-	
-	case WM_KEYDOWN:
-		MessageBox(hWnd, wParam, TEXT("Tecla"), MB_OK);
-	
-	default:
-		break;
-	}
-}
 
 BOOL TrataEventoServidorLocal(HWND hWnd, UINT m, WPARAM wParam, LPARAM lParam)
 {
