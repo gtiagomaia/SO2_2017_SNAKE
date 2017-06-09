@@ -13,21 +13,44 @@
 
 #define PIPE_INPUT TEXT("\\\\.\\pipe\\PIPE_IN")
 #define PIPE_OUTPUT TEXT("\\\\.\\pipe\\PIPE_OUT")
-#define N_MAX_JOGADORES 20
-#define BUFFER_TAM 256
-#define NOME_TAM 100 
-
+#define TAM 256
+#define MAX_JOGADORES 20
+#define MIN_LIN 10
+#define MAX_LIN 80
+#define MIN_COL 10
+#define MAX_COL 80
 
 
 typedef struct {
-	TCHAR username[NOME_TAM];
-	int pontuacao;
-}JOGADOR;
+	TCHAR cima;
+	TCHAR baixo;
+	TCHAR esq;
+	TCHAR dir;
+} TECLAS;
 
 typedef struct {
-	TCHAR mensagem[BUFFER_TAM];
+	TCHAR username[TAM];
+	int status;				// 0: Logado, à espera do início do jogo  -|-  1: Em "modo de jogo"
+	int score;
+	TECLAS teclas;
+} JOGADOR;
+
+typedef struct {
+	int max_jogadores;
+	// Serpente
+	int N, A, T;
+	// Objetos
+	int O, efeito, duracao, vulgar, invulgar, raro;
+	// Dimensões
+	int linhas, colunas;
+} DADOS_JOGO;
+
+typedef struct {
+	TCHAR mensagem[TAM];
 	int idcomando;
 	JOGADOR jogador;
+	DADOS_JOGO jogo;
+
 }MENSG;
 
 
