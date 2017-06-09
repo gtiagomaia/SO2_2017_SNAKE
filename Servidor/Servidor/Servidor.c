@@ -16,8 +16,6 @@ BOOL INICIAR_JOGO = FALSE;
 OVERLAPPED overlapped_sincronizacao;
 HANDLE hEvento;
 
-
-
 /// *** PROTOTIPOS       *** ///
 /// THREADS ================ ///
 DWORD WINAPI AguardaLigacaoCliente(LPVOID param);
